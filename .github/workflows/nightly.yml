@@ -1,0 +1,44 @@
+# Optional: run the agent in the cloud every night and publish the site to GitHub Pages.
+# Push this folder to a GitHub repo, enable Pages (Settings > Pages > Source: GitHub Actions).
+# 12:00 UTC = 4:00 AM PST / 5:00 AM PDT -> always before 6 AM Pacific.
+name: nightly-wireless-research
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency: { group: nightly-research, cancel-in-progress: false }
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests
+      - name: Run research agent
+        working-directory: agent
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}      # optional
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}    # optional
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}          # optional
+        run: python research_agent.py
+      - name: Persist rolling 30-day state
+        run: |
+          git config user.name "research-agent"
+          git config user.email "research-agent@users.noreply.github.com"
+          git add agent/state/*.json site/data
+          git commit -m "nightly research $(date -u +%F)" || echo "no changes"
+          git push
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+  deploy:
+    needs: research
+    runs-on: ubuntu-latest
+    environment: { name: github-pages }
+    steps:
+      - uses: actions/deploy-pages@v4

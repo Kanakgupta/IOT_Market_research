@@ -1,0 +1,64 @@
+# Wireless Intelligence: Wi-Fi & Bluetooth Market Research Agent
+
+An autonomous agent that researches the Wi-Fi, Bluetooth and short-range wireless industry every night. It publishes a static website with a daily report, company pages, a News tab and an Applications tab. Every item links to its public source.
+
+## What you get
+
+| Page | What it shows |
+|---|---|
+| `site/index.html`: **Daily Report** (landing page) | KPIs, executive summary, themes (Wi-Fi 7/8, LE Audio, M&A…), region and segment mix, top stories, deals, launches, partnerships, regulation, earnings, a sortable/filterable **company report** and a **per-company brief** ("what each company is up to") |
+| `site/company.html?id=…` | Wireless business model, product families, agent brief, theme mix, recent announcements, all news from the last 30 days, the applications the company plays in, peers, and the exact public queries used |
+| `site/news.html`: **News** | About 900 de-duplicated stories with filters: technology, region (Americas / Europe / China / APAC), theme, topic feed, time window, press releases only, and search |
+| `site/applications.html`: **Applications** | 40 applications in the left panel. For each: major players, chip suppliers, a **10-year market trend** built from public forecasts (evidence table with links; outliers flagged), analyst signals, and latest news |
+| `site/sources.html` | Methodology, every query from the last run as a clickable link, run statistics and the agent log |
+
+Coverage is defined in `agent/catalog_companies.py` and `agent/catalog_applications.py`:
+- 124 companies: chip vendors (well-known and niche, including China), software/IP, network equipment, modules/RF, test, standards bodies, 30+ OEMs and AI-device makers
+- 40 applications
+- 23 industry topics and 7 regional news editions
+
+Edit these files to add or remove coverage. No other code changes are needed.
+
+## Run it (Windows scripts in `Script\Windows`)
+
+| Script | What it does |
+|---|---|
+| `Run_Agent.bat` | Double-click to run the research agent (full run, ~4 minutes). It refreshes `site\data\*` and writes a log to `agent\logs\`. Options: `-Quick` (30-second smoke test), `-Open` (opens the report when done). |
+| `Start_Server.bat` | Double-click to start the local web server and open http://localhost:8080 in your browser. If 8080 is busy, it uses the next free port. Options: `-Port 9000`, `-NoBrowser`. Stop with Ctrl+C or by closing the window. |
+
+Each `.bat` file calls the `.ps1` file of the same name, so you can also run them from PowerShell:
+
+```powershell
+C:\guptakanak\AI_Agents\Market_Research\Script\Windows\Run_Agent.ps1 -Open
+C:\guptakanak\AI_Agents\Market_Research\Script\Windows\Start_Server.ps1
+```
+
+Requirements: Python 3.10+ on PATH. `Run_Agent` installs `requests` if it is missing. You can also open `site\index.html` directly, without the server.
+
+For a fresh report before 6 AM Pacific, run `Run_Agent.bat` before you leave the PC (on and awake). Each run builds on the stored 30-day history, so a run late in the evening still gives a complete report.
+
+Optional cloud alternative: push this folder to GitHub and use `.github/workflows/nightly.yml`. It runs at 12:00 UTC (4–5 AM Pacific) and publishes `site/` to GitHub Pages, without your PC.
+
+### Publishing online
+`site/` is fully static. To publish automatically after each run, set `WR_PUBLISH_CMD` to a copy or upload command for your web host; `Run_Agent` runs it after a successful run. Examples: `robocopy C:\...\site \\server\wwwroot /MIR`, `az storage blob upload-batch ...`, `aws s3 sync ...`.
+
+### Optional AI narrative
+Set `LLM_API_KEY` (plus optional `LLM_BASE_URL` and `LLM_MODEL`, for any OpenAI-compatible endpoint). The executive summary then gets an analyst narrative. It is written **only** from the numbered public headlines and cites them as clickable `[n]` links. Without a key, the summary is fully deterministic.
+
+## How accuracy is protected
+- **Public sources only.** Google News RSS (US/UK/DE/IN/CN/TW/JP editions) and Bing News RSS, plus official company websites. Every headline, forecast and query is clickable.
+- **Relevance guards.**
+  - The company must be named in the headline.
+  - Ambiguous brand words (Ring, Echo, Honor, Nothing…) are matched case-sensitively.
+  - For diversified companies, the headline must be about wireless, devices or that company's relevant segment.
+  - Shopping-deal and fund-holding/analyst-chatter items are dropped.
+- **De-duplication and clustering.** Syndicated copies collapse into one story with "+N more outlets".
+- **Forecasts.**
+  - A forecast only counts if the headline names that application's market.
+  - Figures are read from the headline, the snippet, or the public press-release page next to the market phrase.
+  - The trend uses the median of the evidence. Outliers are excluded and flagged.
+  - If no public evidence exists, the chart says so and shows an indicative growth index.
+- **Profiles.** Business-model text covers stable, publicly documented business lines. Time-sensitive facts always come from dated, linked news.
+- **State.** `agent/state/` keeps a rolling 40-day article store and a 400-day forecast store, so coverage deepens every night.
+
+> Feed terms: the Google and Bing RSS feeds are licensed for personal, non-commercial use. For a commercial or public site, swap `Fetcher` in `research_agent.py` for a licensed news API (e.g. Bing News Search API, NewsAPI, GDELT).

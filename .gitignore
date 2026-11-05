@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+agent/logs/
+*.log
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.venv/
+venv/

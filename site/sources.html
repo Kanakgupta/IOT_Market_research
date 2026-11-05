@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sources &amp; Methodology — Wireless Intelligence</title>
+<link rel="stylesheet" href="assets/style.css?v=2" />
+</head>
+<body>
+<div id="hdr"></div>
+<main class="wrap content">
+  <section class="hero"><h1>Sources &amp; Methodology</h1><p class="muted">Everything on this site comes from publicly available sources. Every item links back to its origin.</p></section>
+
+  <section class="grid g2">
+    <div class="card">
+      <h2>How the agent works (nightly, unattended)</h2>
+      <ol>
+        <li><b>Search.</b> Runs a fixed set of public news queries for every tracked company, application and industry topic in <b>Google News RSS</b> (US, UK, Germany, India, China, Taiwan and Japan editions) and <b>Bing News RSS</b>. China-based vendors are also searched in Chinese.</li>
+        <li><b>Relevance guard.</b> A company story is kept only when the company is named in the headline. Ambiguous brand names (e.g. “Ring”, “Nothing”, “Honor”) are only matched within the company's own targeted query.</li>
+        <li><b>De-duplicate &amp; cluster.</b> The same story syndicated by several outlets becomes one item with “+N more outlets” links, so coverage breadth becomes a signal.</li>
+        <li><b>Classify.</b> Each headline is tagged by technology (Wi-Fi / Bluetooth / UWB-Matter-NearLink / business), by theme (Wi-Fi 7/8, LE Audio, Channel Sounding, M&amp;A, launches, earnings, regulation…) and by region (company HQ, news edition, publisher country).</li>
+        <li><b>Score.</b> Importance = recency + theme weight (M&amp;A, Wi-Fi 8 and partnerships rank higher) + outlet breadth + tier-1 publisher + wireless relevance.</li>
+        <li><b>Market forecasts.</b> Public market-size press releases are parsed for value, target year and CAGR. A forecast only counts when the headline names the application's market. The 10-year curve uses the median of the evidence, and outliers are excluded and flagged. When no public forecast is found, the chart says so and shows an indicative index instead.</li>
+        <li><b>Publish.</b> Static data files are written for this website. No server is needed, and the site can be hosted anywhere.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Accuracy &amp; usage notes</h2>
+      <ul>
+        <li>Company profiles (business model, product families) cover publicly documented business lines, linked to each official website. Anything time-sensitive comes from dated, linked news.</li>
+        <li>Classification is rule-based and deterministic, so it is reproducible. Open the source link before acting on any single headline.</li>
+        <li>Market-research press releases vary in scope and quality. That is why the site shows every data point, its source, and whether it was used.</li>
+        <li>Google News links open through Google's redirect to the original publisher. Bing items link directly to the publisher.</li>
+        <li>The RSS feeds are licensed for personal, non-commercial feed-reader use. For commercial or public redistribution, switch to a licensed news API (for example Bing News Search API, NewsAPI or GDELT). Only the fetcher would need to change.</li>
+      </ul>
+      <h3 style="margin-top:12px">Last run</h3><div id="run" class="small"></div>
+    </div>
+  </section>
+
+  <section class="card"><div class="card-head"><h2>Every public query used in the last run</h2><span class="muted small" id="qn"></span></div>
+    <div class="filters" style="margin-bottom:8px"><input type="text" id="qq" placeholder="Filter queries…"><select id="kind"><option value="">All kinds</option><option>company</option><option>app</option><option>forecast</option><option>topic</option></select></div>
+    <div class="tbl-wrap" style="max-height:560px"><table><thead><tr><th class="nosort">Kind</th><th class="nosort">Entity</th><th class="nosort">Source</th><th class="nosort">Query (click to open the public results)</th><th class="nosort num">Items</th></tr></thead><tbody id="qt"></tbody></table></div>
+  </section>
+
+  <section class="card"><h2>Agent log</h2><pre class="small muted" id="log" style="white-space:pre-wrap"></pre></section>
+</main>
+<footer id="ftr"></footer>
+<script src="data/index.js"></script>
+<script src="data/runlog.js"></script>
+<script src="assets/common.js?v=2"></script>
+<script>
+(function () {
+  WR.header("sources");
+  const R = window.WR_RUNLOG, E = WR.esc;
+  if (!R) return;
+  const k = R.kpis;
+  document.getElementById("run").innerHTML = `Finished <b>${WR.fmtFull(R.generated)}</b> in ${R.duration_s}s · ${k.queries_ok}/${k.queries} queries succeeded · ${k.raw} raw articles → ${k.articles} distinct stories from ${k.publishers} publishers · ${k.forecasts} public forecasts on file · AI narrative: ${R.llm ? "on" : "off (deterministic summary)"}`;
+  const human = (u) => u.replace("/rss/search", "/search").replace("&format=rss", "");
+  const qtext = (u) => decodeURIComponent((u.match(/[?&]q=([^&]+)/) || [])[1] || "").replace(/\+/g, " ");
+  const draw = () => {
+    const f = document.getElementById("qq").value.toLowerCase(), kd = document.getElementById("kind").value;
+    const rows = R.jobs.filter((j) => (!kd || j.kind === kd) && (!f || (j.eid + " " + qtext(j.url)).toLowerCase().includes(f)));
+    document.getElementById("qn").textContent = `${rows.length} of ${R.jobs.length} queries`;
+    document.getElementById("qt").innerHTML = rows.map((j) => `<tr><td class="small">${E(j.kind)}</td><td class="small">${j.kind === "company" ? `<a href="company.html?id=${j.eid}">${E(WR.coName[j.eid] || j.eid)}</a>` : (j.kind === "app" || j.kind === "forecast") ? `<a href="applications.html?app=${j.eid}">${E(j.eid)}</a>` : E(j.eid)}</td>
+      <td class="small">${j.via === "bing" ? "Bing News" : "Google News"} · ${E(j.edition)}</td><td class="small"><a class="ext" href="${E(human(j.url))}" target="_blank" rel="noopener">${E(qtext(j.url))}</a></td><td class="num">${j.ok ? j.items : '<span class="down">failed</span>'}</td></tr>`).join("");
+  };
+  document.getElementById("qq").oninput = draw; document.getElementById("kind").onchange = draw; draw();
+  document.getElementById("log").textContent = (R.log || []).join("\n");
+})();
+</script>
+</body>
+</html>

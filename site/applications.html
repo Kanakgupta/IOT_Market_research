@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Applications — Wi-Fi &amp; Bluetooth markets, players, chips &amp; 10-year trend | Wireless Intelligence</title>
+<link rel="stylesheet" href="assets/style.css?v=2" />
+</head>
+<body>
+<div id="hdr"></div>
+<main class="wrap content">
+  <div class="applayout">
+    <aside class="side"><input type="text" id="aq" placeholder="Filter applications…" /><div id="alist"></div></aside>
+    <section id="app"></section>
+  </div>
+</main>
+<footer id="ftr"></footer>
+<script src="data/index.js"></script>
+<script src="data/apps.js"></script>
+<script src="assets/common.js?v=2"></script>
+<script>
+(function () {
+  WR.header("apps");
+  const A = window.WR_APPS, E = WR.esc;
+  if (!A) { document.getElementById("app").innerHTML = '<div class="card empty">No application data yet — run the agent.</div>'; return; }
+  const L = A.theme_labels;
+  let cur = WR.qs("app") || A.apps[0].id;
+
+  function side() {
+    const q = document.getElementById("aq").value.toLowerCase();
+    let html = "", g = "";
+    A.apps.filter((a) => !q || a.name.toLowerCase().includes(q) || a.group.toLowerCase().includes(q)).forEach((a) => {
+      if (a.group !== g) { g = a.group; html += `<div class="gh">${E(g)}</div>`; }
+      html += `<a href="?app=${a.id}" data-id="${a.id}" class="${a.id === cur ? "on" : ""}"><span>${a.icon}</span><span>${E(a.name)}</span><span class="n">${a.n30}</span></a>`;
+    });
+    document.getElementById("alist").innerHTML = html;
+  }
+  document.getElementById("aq").oninput = side;
+  document.getElementById("alist").onclick = (e) => {
+    const a = e.target.closest("a[data-id]");
+    if (!a) return;
+    e.preventDefault();
+    cur = a.dataset.id;
+    history.replaceState(null, "", "?app=" + cur);
+    side(); show();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const coLink = (name, cid) => cid && WR.coName[cid] ? `<a href="company.html?id=${cid}"><b>${E(name)}</b></a>` : `<b>${E(name)}</b>`;
+
+  function show() {
+    const a = A.apps.find((x) => x.id === cur) || A.apps[0];
+    document.title = `${a.name} — players, chips & 10-year market trend | Wireless Intelligence`;
+    const P = a.projection;
+    const isIdx = !!P.index;
+    const fmt = isIdx ? (v) => v.toFixed(0) : WR.money;
+    let trendNote;
+    if (P.source === "public") trendNote = `<div class="note info">Projection = median of <b>${P.n}</b> public forecast data points found by the agent (base ${BASEY()} ≈ <b>${WR.money(P.base)}</b>, median CAGR <b>${P.cagr}%</b>${P.cagr_range ? `, range ${P.cagr_range[0]}–${P.cagr_range[1]}%` : ""}${P.cagr_from === "prior" ? " — CAGR is the agent's prior because no public CAGR was captured" : ""}). The shaded band shows the spread across sources. Outliers are excluded and flagged below.</div>`;
+    else if (P.source === "public-cagr") trendNote = `<div class="note info">Public sources gave growth rates but no market size in this run, so the chart shows a <b>growth index (${BASEY()} = 100)</b> at the median public CAGR of <b>${P.cagr}%</b>${P.cagr_range ? ` (range ${P.cagr_range[0]}–${P.cagr_range[1]}%)` : ""}.</div>`;
+    else trendNote = `<div class="note">No public forecast was captured in this run. The curve is a <b>growth index (${BASEY()} = 100)</b> at the agent's prior estimate of <b>${P.cagr}% CAGR</b>. Treat it as indicative only; the agent searches for public forecasts again every night.</div>`;
+
+    const fc = a.forecasts.length ? `<div class="tbl-wrap"><table><thead><tr><th class="nosort">Public forecast (source)</th><th class="nosort num">CAGR</th><th class="nosort num">Value / target year</th><th class="nosort">Used</th></tr></thead><tbody>
+      ${a.forecasts.map((f) => `<tr><td><a class="ext" href="${E(f.u)}" target="_blank" rel="noopener">${E(f.t)}</a><div class="tiny muted">${E(f.p)} · ${WR.fmtDate(f.d)}${f.x ? " · " + E(f.x.slice(0, 160)) + "…" : ""}</div></td>
+        <td class="num">${f.cagr != null ? f.cagr + "%" : "—"}</td><td class="num">${f.tv ? WR.money(f.tv) + " by " + f.ty : "—"}${f.sv ? `<div class="tiny muted">from ${WR.money(f.sv)} (${f.sy})</div>` : ""}</td>
+        <td>${f.out ? '<span class="pill-out">outlier – excluded</span>' : '<span class="pill-in">included</span>'}</td></tr>`).join("")}</tbody></table></div>`
+      : '<div class="muted small">No public forecast headlines matched this application in the last 12 months.</div>';
+
+    document.getElementById("app").innerHTML = `
+      <div class="card">
+        <div class="card-head"><div><h1>${a.icon} ${E(a.name)}</h1><div class="muted">${E(a.group)}</div></div>
+          <div class="kpis" style="min-width:420px">
+            <div class="kpi"><div class="v">${a.n30}</div><div class="l">Stories (30d)</div></div>
+            <div class="kpi"><div class="v">${P.cagr}%</div><div class="l">${P.source === "prior" ? "Prior CAGR (estimate)" : "Median public CAGR"}</div></div>
+            <div class="kpi"><div class="v">${P.base ? WR.money(P.base) : "—"}</div><div class="l">Est. ${BASEY()} market</div></div>
+            <div class="kpi"><div class="v">${P.n}</div><div class="l">Public data points</div></div>
+          </div></div>
+        <p>${E(a.desc)}</p>
+        <div>${a.tech.map((t) => `<span class="chip t-wifi">${E(t)}</span>`).join("")}</div>
+      </div>
+
+      <div class="card"><div class="card-head"><h2>Market trend — next 10 years</h2><span class="muted small">${isIdx ? "index, " + BASEY() + " = 100" : "USD, global market"}</span></div>
+        ${WR.lineChart(P.years, P.mid, P.lo, P.hi, fmt)}
+        <div style="margin-top:10px">${trendNote}</div>
+        <h3 style="margin-top:14px">Forecast evidence (public)</h3>${fc}
+      </div>
+
+      <div class="grid g2">
+        <div class="card"><h2>Major players</h2><div class="tbl-wrap"><table><thead><tr><th class="nosort">Company</th><th class="nosort">Products</th></tr></thead><tbody>
+          ${a.players.map((p) => `<tr><td>${coLink(p.name, p.cid)}</td><td class="small">${E(p.products)}</td></tr>`).join("")}</tbody></table></div></div>
+        <div class="card"><h2>Chips &amp; silicon suppliers</h2><div class="tbl-wrap"><table><thead><tr><th class="nosort">Vendor</th><th class="nosort">Chips / platforms</th></tr></thead><tbody>
+          ${a.chips.map((c) => `<tr><td>${coLink(c.vendor, c.cid)}</td><td class="small">${E(c.parts)}</td></tr>`).join("")}</tbody></table></div>
+          <p class="tiny muted">Vendors with publicly marketed parts for this application. A specific device is only named where the design win was publicly disclosed.</p></div>
+      </div>
+
+      <div class="card"><div class="card-head"><h2>Analyst &amp; market signals (30 days)</h2><span class="muted small">shipments, share, demand: IDC, Counterpoint, Canalys, Omdia, TrendForce…</span></div>
+        <ul class="news">${a.signals.length ? a.signals.map((n) => WR.newsItem(n, L, { desc: true })).join("") : '<li class="empty">No analyst signals captured this month.</li>'}</ul></div>
+
+      <div class="card"><div class="card-head"><h2>Latest ${E(a.name)} news</h2><span class="muted small">ranked by importance</span></div>
+        <ul class="news">${a.news.length ? a.news.map((n) => WR.newsItem(n, L, { desc: true })).join("") : '<li class="empty">No news in window.</li>'}</ul>
+        <div class="small" style="margin-top:10px">Agent queries: ${(a.queries || []).map((u, i) => `<a class="ext" href="${E(u.replace("/rss/search", "/search").replace("&format=rss", ""))}" target="_blank" rel="noopener">#${i + 1}</a>`).join(" ")}</div></div>`;
+  }
+  const BASEY = () => (A.apps[0].projection.years || [new Date().getFullYear()])[0];
+  side(); show();
+})();
+</script>
+</body>
+</html>

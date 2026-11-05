@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Company — Wireless Intelligence</title>
+<link rel="stylesheet" href="assets/style.css?v=2" />
+</head>
+<body>
+<div id="hdr"></div>
+<main class="wrap content" id="main"><div class="card empty">Loading company…</div></main>
+<footer id="ftr"></footer>
+<script src="data/index.js"></script>
+<script src="assets/common.js?v=2"></script>
+<script>
+(function () {
+  WR.header("company");
+  const id = (WR.qs("id") || "").replace(/[^a-z0-9_-]/gi, "");
+  const main = document.getElementById("main");
+  if (!id) { main.innerHTML = '<div class="card empty">No company selected. <a href="index.html#companies">Browse companies</a></div>'; return; }
+  const s = document.createElement("script");
+  s.src = `data/companies/${id}.js`;
+  s.onload = () => render(window.WR_COMPANY);
+  s.onerror = () => (main.innerHTML = `<div class="card empty">Company “${WR.esc(id)}” not found. <a href="index.html#companies">Browse companies</a></div>`);
+  document.body.appendChild(s);
+
+  function render(C) {
+    const E = WR.esc;
+    document.title = `${C.name} — Wi-Fi & Bluetooth business | Wireless Intelligence`;
+    const st = C.stats;
+    const initials = C.name.replace(/\(.*?\)/g, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+    const domain = (() => { try { return new URL(C.web).hostname.replace(/^www\./, ""); } catch (e) { return ""; } })();
+    main.innerHTML = `
+    <section class="card">
+      <div class="co-head">
+        <div class="co-logo">${E(initials)}</div>
+        <div style="flex:1;min-width:280px">
+          <h1>${E(C.name)} ${WR.tierBadge(C.tier)}</h1>
+          <div class="muted">${E(WR.catName[C.cat] || C.cat)} · ${E(C.region)} · HQ ${E(C.hq)}</div>
+          <div style="margin-top:6px">${C.tech.map((t) => `<span class="chip t-wifi">${E(t)}</span>`).join("")}</div>
+          <div class="links" style="margin-top:8px">
+            <a class="ext" href="${E(C.web)}" target="_blank" rel="noopener">Official website (${E(domain)})</a>
+            ${C.newsroom ? `<a class="ext" href="${E(C.newsroom)}" target="_blank" rel="noopener">Official newsroom</a>` : ""}
+            <a class="ext" href="https://news.google.com/search?q=${encodeURIComponent('"' + C.name.replace(/\s*\(.*?\)\s*/g, " ").trim() + '"')}" target="_blank" rel="noopener">Live Google News</a>
+          </div>
+        </div>
+        <div class="kpis" style="min-width:320px;flex:0 0 420px">
+          <div class="kpi"><div class="v">${st.n30}</div><div class="l">Distinct stories (30d)</div></div>
+          <div class="kpi"><div class="v">${st.n7}</div><div class="l">Last 7 days</div></div>
+          <div class="kpi"><div class="v">${WR.momHtml(st.mom, "")}</div><div class="l">Coverage momentum</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid g2">
+      <div class="card">
+        <h2>Agent brief</h2><p class="muted">${E(C.brief)}</p>
+        <h2 style="margin-top:14px">Wireless business model</h2><p>${E(C.model)}</p>
+        <h3 style="margin-top:12px">Key product families</h3>
+        <div>${C.products.map((p) => `<span class="chip">${E(p)}</span>`).join("")}</div>
+        <p class="tiny muted" style="margin-top:10px">Profile = publicly documented business lines (see official website). Time-sensitive facts come from the dated, linked news below.</p>
+      </div>
+      <div class="card">
+        <h2>What the news is about (30 days)</h2>
+        <div id="thm"></div>
+        <h3 style="margin-top:14px">Where coverage comes from</h3>
+        <div id="rg"></div>
+      </div>
+    </section>
+
+    <section class="grid g2">
+      <div class="card"><div class="card-head"><h2>Recent announcements</h2><span class="muted small">press releases &amp; company-led headlines</span></div>
+        <ul class="news" id="ann"></ul></div>
+      <div class="card"><div class="card-head"><h2>Where ${E(C.name.replace(/\s*\(.*?\)/, ""))} plays — applications</h2></div>
+        <div id="apps"></div>
+        <h3 style="margin-top:14px">Peers in segment</h3><div id="peers"></div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Latest news — last 30 days</h2>
+        <div class="filters"><input type="text" id="nq" placeholder="Filter headlines…"><select id="nth"><option value="">All themes</option></select></div></div>
+      <ul class="news" id="news"></ul>
+    </section>
+
+    <section class="card"><h3>Public queries used by the agent for this company</h3>
+      <div class="small">${(C.queries || []).map((u, i) => `<div><a class="ext" href="${E(u.replace("/rss/search", "/search").replace("&format=rss", ""))}" target="_blank" rel="noopener">Query ${i + 1}: ${E(decodeURIComponent((u.match(/[?&]q=([^&]+)/) || [])[1] || "").replace(/\+/g, " "))}</a> <span class="muted tiny">(${u.includes("bing") ? "Bing News" : "Google News"})</span></div>`).join("")}</div>
+    </section>`;
+
+    const TL = WR.TL;
+    document.getElementById("thm").innerHTML = st.themes.length ? WR.bars(st.themes.filter(([t]) => !["wifi", "bluetooth", "chips"].includes(t)).slice(0, 10).map(([t, n]) => ({ l: E(TL[t] || t), v: n }))) : '<div class="empty">No coverage in window</div>';
+    document.getElementById("rg").innerHTML = st.regions.length ? WR.bars(st.regions.filter(([r]) => r !== "Global").map(([r, n]) => ({ l: E(r), v: n }))) : '<div class="muted small">—</div>';
+    document.getElementById("ann").innerHTML = C.announcements.length ? C.announcements.slice(0, 12).map((n) => WR.newsItem(n, TL, { desc: true })).join("") : '<li class="empty">No company-led announcements detected in the window.</li>';
+    document.getElementById("apps").innerHTML = C.apps.length ? `<div class="tbl-wrap"><table><thead><tr><th class="nosort">Application</th><th class="nosort">Role</th><th class="nosort">Products / parts</th></tr></thead><tbody>${C.apps.map((a) => `<tr><td><a href="applications.html?app=${a.id}">${E(a.name)}</a></td><td class="small">${E(a.role)}</td><td class="small">${E(a.what)}</td></tr>`).join("")}</tbody></table></div>` : '<div class="muted small">Not mapped to a tracked application yet.</div>';
+    document.getElementById("peers").innerHTML = C.peers.map((p) => `<a class="chip co" href="company.html?id=${p.id}">${E(p.name)}</a>`).join("");
+
+    const sel = document.getElementById("nth");
+    const tcount = {};
+    C.news.forEach((n) => n.th.forEach((t) => (tcount[t] = (tcount[t] || 0) + 1)));
+    Object.entries(tcount).sort((a, b) => b[1] - a[1]).forEach(([t, n]) => sel.insertAdjacentHTML("beforeend", `<option value="${t}">${E(TL[t] || t)} (${n})</option>`));
+    const draw = () => {
+      const q = document.getElementById("nq").value.toLowerCase(), t = sel.value;
+      const rows = C.news.filter((n) => (!t || n.th.includes(t)) && (!q || n.t.toLowerCase().includes(q)));
+      document.getElementById("news").innerHTML = rows.length ? rows.map((n) => WR.newsItem(n, TL, { desc: true })).join("") : '<li class="empty">No headlines match.</li>';
+    };
+    document.getElementById("nq").oninput = draw; sel.onchange = draw; draw();
+  }
+})();
+</script>
+</body>
+</html>

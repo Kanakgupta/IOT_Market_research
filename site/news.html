@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Wireless News — Wi-Fi, Bluetooth &amp; short-range wireless | Wireless Intelligence</title>
+<link rel="stylesheet" href="assets/style.css?v=2" />
+</head>
+<body>
+<div id="hdr"></div>
+<main class="wrap content">
+  <section class="hero">
+    <h1>Wireless Industry News</h1>
+    <p class="muted" id="sub"></p>
+  </section>
+  <section class="card">
+    <div class="toggles" id="techT"></div>
+    <div class="toggles" id="regT" style="margin-top:8px"></div>
+    <div class="toggles" id="timeT" style="margin-top:8px"></div>
+    <div class="filters" style="margin-top:10px">
+      <input type="text" id="q" placeholder="Search headlines, publishers, companies…" />
+      <select id="theme"><option value="">All themes</option></select>
+      <select id="topic"><option value="">All topics / feeds</option></select>
+      <select id="sort"><option value="score">Sort: Top (importance)</option><option value="date">Sort: Latest</option><option value="cv">Sort: Most covered</option></select>
+      <label class="small muted"><input type="checkbox" id="wire" /> press releases only</label>
+      <span class="muted small" id="cnt"></span>
+    </div>
+  </section>
+  <section class="card"><ul class="news" id="list"></ul>
+    <div style="text-align:center;margin-top:12px"><button class="btn" id="more">Load more</button></div></section>
+</main>
+<footer id="ftr"></footer>
+<script src="data/index.js"></script>
+<script src="data/news.js"></script>
+<script src="assets/common.js?v=2"></script>
+<script>
+(function () {
+  WR.header("news");
+  const N = window.WR_NEWS, E = WR.esc;
+  if (!N) { document.querySelector("main").innerHTML = '<div class="card empty">No news yet — run the agent.</div>'; return; }
+  const L = N.theme_labels;
+  document.getElementById("sub").innerHTML = `${N.items.length} distinct stories from public outlets across the Americas, Europe, China &amp; APAC — de-duplicated, clustered and ranked by the agent · updated ${WR.fmtFull(N.generated)}`;
+  let tech = "", reg = WR.qs("region") || "", days = 30, limit = 60;
+  const mk = (el, lbl, opts, cur, key) => { el.innerHTML = `<span class="lbl">${lbl}</span>` + opts.map(([v, t]) => `<button class="tbtn" data-${key}="${v}">${E(t)}</button>`).join(""); };
+  mk(document.getElementById("techT"), "Technology", [["", "All"], ["Wi-Fi", "Wi-Fi"], ["Bluetooth", "Bluetooth"], ["Other wireless", "UWB / Matter / NearLink"], ["Business", "Business & deals"]], tech, "t");
+  mk(document.getElementById("regT"), "Region", [["", "All"], ["Americas", "Americas"], ["Europe", "Europe / EU"], ["China", "China"], ["APAC", "APAC"]], reg, "r");
+  mk(document.getElementById("timeT"), "Time", [["1", "24 hours"], ["7", "7 days"], ["30", "30 days"]], days, "d");
+  document.getElementById("techT").onclick = (e) => { if (e.target.dataset.t !== undefined) { tech = e.target.dataset.t; limit = 60; draw(); } };
+  document.getElementById("regT").onclick = (e) => { if (e.target.dataset.r !== undefined) { reg = e.target.dataset.r; limit = 60; draw(); } };
+  document.getElementById("timeT").onclick = (e) => { if (e.target.dataset.d !== undefined) { days = +e.target.dataset.d; limit = 60; draw(); } };
+  const thSel = document.getElementById("theme"), tpSel = document.getElementById("topic");
+  const tc = {};
+  N.items.forEach((n) => n.th.forEach((t) => (tc[t] = (tc[t] || 0) + 1)));
+  Object.entries(tc).sort((a, b) => b[1] - a[1]).forEach(([t, n]) => thSel.insertAdjacentHTML("beforeend", `<option value="${t}">${E(L[t] || t)} (${n})</option>`));
+  N.topics.forEach((t) => tpSel.insertAdjacentHTML("beforeend", `<option value="${t.id}">${E(t.label)}</option>`));
+  if (WR.qs("theme")) thSel.value = WR.qs("theme");
+  if (WR.qs("q")) document.getElementById("q").value = WR.qs("q");
+  ["q", "theme", "topic", "sort", "wire"].forEach((id) => document.getElementById(id).addEventListener("input", () => { limit = 60; draw(); }));
+  document.getElementById("more").onclick = () => { limit += 60; draw(); };
+
+  function draw() {
+    document.querySelectorAll("#techT .tbtn").forEach((b) => b.classList.toggle("on", b.dataset.t === tech));
+    document.querySelectorAll("#regT .tbtn").forEach((b) => b.classList.toggle("on", b.dataset.r === reg));
+    document.querySelectorAll("#timeT .tbtn").forEach((b) => b.classList.toggle("on", +b.dataset.d === days));
+    const q = document.getElementById("q").value.toLowerCase(), th = thSel.value, tp = tpSel.value, so = document.getElementById("sort").value, wire = document.getElementById("wire").checked;
+    const cut = Date.now() - days * 864e5;
+    let rows = N.items.filter((n) => new Date(n.d).getTime() >= cut && (!tech || n.tech.includes(tech)) && (!reg || n.rg.includes(reg)) && (!th || n.th.includes(th)) && (!wire || n.w)
+      && (!tp || (n.tp || []).includes(tp))
+      && (!q || (n.t + " " + n.p + " " + (n.c || []).map((c) => WR.coName[c] || "").join(" ")).toLowerCase().includes(q)));
+    rows.sort((a, b) => so === "date" ? b.d.localeCompare(a.d) : so === "cv" ? b.cv - a.cv || b.s - a.s : b.s - a.s);
+    document.getElementById("cnt").textContent = `${rows.length} stories`;
+    document.getElementById("list").innerHTML = rows.length ? rows.slice(0, limit).map((n) => WR.newsItem(n, L, { desc: true })).join("") : '<li class="empty">No stories match these filters.</li>';
+    document.getElementById("more").style.display = rows.length > limit ? "" : "none";
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
