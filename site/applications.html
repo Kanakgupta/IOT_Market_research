@@ -4,20 +4,20 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Applications — Wi-Fi &amp; Bluetooth markets, players, chips &amp; 10-year trend | Wireless Intelligence</title>
-<link rel="stylesheet" href="assets/style.css?v=2" />
+<link rel="stylesheet" href="assets/style.css?v=3" />
 </head>
 <body>
 <div id="hdr"></div>
 <main class="wrap content">
   <div class="applayout">
-    <aside class="side"><input type="text" id="aq" placeholder="Filter applications…" /><div id="alist"></div></aside>
+    <aside class="side" aria-label="Application explorer"><div class="side-heading">Find your next opportunity.</div><p class="side-description">Explore the applications of wireless.</p><input type="text" id="aq" aria-label="Filter applications" placeholder="Find an application…" /><div id="alist"></div></aside>
     <section id="app"></section>
   </div>
 </main>
 <footer id="ftr"></footer>
 <script src="data/index.js"></script>
 <script src="data/apps.js"></script>
-<script src="assets/common.js?v=2"></script>
+<script src="assets/common.js?v=3"></script>
 <script>
 (function () {
   WR.header("apps");
@@ -31,9 +31,9 @@
     let html = "", g = "";
     A.apps.filter((a) => !q || a.name.toLowerCase().includes(q) || a.group.toLowerCase().includes(q)).forEach((a) => {
       if (a.group !== g) { g = a.group; html += `<div class="gh">${E(g)}</div>`; }
-      html += `<a href="?app=${a.id}" data-id="${a.id}" class="${a.id === cur ? "on" : ""}"><span>${a.icon}</span><span>${E(a.name)}</span><span class="n">${a.n30}</span></a>`;
+      html += `<a href="?app=${a.id}" data-id="${a.id}" ${a.id === cur ? 'aria-current="page"' : ""} class="${a.id === cur ? "on" : ""}"><span aria-hidden="true">${a.icon}</span><span>${E(a.name)}</span><span class="n">${a.n30}</span></a>`;
     });
-    document.getElementById("alist").innerHTML = html;
+    document.getElementById("alist").innerHTML = html || '<p class="empty">No applications match.</p>';
   }
   document.getElementById("aq").oninput = side;
   document.getElementById("alist").onclick = (e) => {
@@ -43,7 +43,7 @@
     cur = a.dataset.id;
     history.replaceState(null, "", "?app=" + cur);
     side(); show();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   };
 
   const coLink = (name, cid) => cid && WR.coName[cid] ? `<a href="company.html?id=${cid}"><b>${E(name)}</b></a>` : `<b>${E(name)}</b>`;
@@ -67,10 +67,10 @@
 
     document.getElementById("app").innerHTML = `
       <div class="card">
-        <div class="card-head"><div><h1>${a.icon} ${E(a.name)}</h1><div class="muted">${E(a.group)}</div></div>
+        <div class="card-head"><div><span class="eyebrow">APPLICATION INTELLIGENCE / ${E(a.group)}</span><h1>${a.icon} ${E(a.name)}</h1></div>
           <div class="kpis" style="min-width:420px">
             <div class="kpi"><div class="v">${a.n30}</div><div class="l">Stories (30d)</div></div>
-            <div class="kpi"><div class="v">${P.cagr}%</div><div class="l">${P.source === "prior" ? "Prior CAGR (estimate)" : "Median public CAGR"}</div></div>
+            <div class="kpi"><div class="v">${P.cagr}%</div><div class="l">${P.source === "prior" || P.cagr_from === "prior" ? "Prior CAGR (estimate)" : "Median public CAGR"}</div></div>
             <div class="kpi"><div class="v">${P.base ? WR.money(P.base) : "—"}</div><div class="l">Est. ${BASEY()} market</div></div>
             <div class="kpi"><div class="v">${P.n}</div><div class="l">Public data points</div></div>
           </div></div>

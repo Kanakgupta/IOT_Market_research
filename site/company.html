@@ -4,14 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Company — Wireless Intelligence</title>
-<link rel="stylesheet" href="assets/style.css?v=2" />
+<link rel="stylesheet" href="assets/style.css?v=3" />
 </head>
 <body>
 <div id="hdr"></div>
 <main class="wrap content" id="main"><div class="card empty">Loading company…</div></main>
 <footer id="ftr"></footer>
 <script src="data/index.js"></script>
-<script src="assets/common.js?v=2"></script>
+<script src="assets/common.js?v=3"></script>
 <script>
 (function () {
   WR.header("company");
@@ -35,7 +35,7 @@
       <div class="co-head">
         <div class="co-logo">${E(initials)}</div>
         <div style="flex:1;min-width:280px">
-          <h1>${E(C.name)} ${WR.tierBadge(C.tier)}</h1>
+          <span class="eyebrow">COMPANY INTELLIGENCE</span><h1>${E(C.name)} ${WR.tierBadge(C.tier)}</h1>
           <div class="muted">${E(WR.catName[C.cat] || C.cat)} · ${E(C.region)} · HQ ${E(C.hq)}</div>
           <div style="margin-top:6px">${C.tech.map((t) => `<span class="chip t-wifi">${E(t)}</span>`).join("")}</div>
           <div class="links" style="margin-top:8px">

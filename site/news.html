@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Wireless News — Wi-Fi, Bluetooth &amp; short-range wireless | Wireless Intelligence</title>
-<link rel="stylesheet" href="assets/style.css?v=2" />
+<link rel="stylesheet" href="assets/style.css?v=3" />
 </head>
 <body>
 <div id="hdr"></div>
 <main class="wrap content">
   <section class="hero">
-    <h1>Wireless Industry News</h1>
+    <span class="eyebrow">THE WIRELESS NEWSROOM</span><h1>The signals shaping what's next.</h1>
     <p class="muted" id="sub"></p>
   </section>
   <section class="card">
@@ -18,7 +18,7 @@
     <div class="toggles" id="regT" style="margin-top:8px"></div>
     <div class="toggles" id="timeT" style="margin-top:8px"></div>
     <div class="filters" style="margin-top:10px">
-      <input type="text" id="q" placeholder="Search headlines, publishers, companies…" />
+      <input type="text" id="q" aria-label="Search news headlines, publishers and companies" placeholder="Search headlines, publishers, companies…" />
       <select id="theme"><option value="">All themes</option></select>
       <select id="topic"><option value="">All topics / feeds</option></select>
       <select id="sort"><option value="score">Sort: Top (importance)</option><option value="date">Sort: Latest</option><option value="cv">Sort: Most covered</option></select>
@@ -32,7 +32,7 @@
 <footer id="ftr"></footer>
 <script src="data/index.js"></script>
 <script src="data/news.js"></script>
-<script src="assets/common.js?v=2"></script>
+<script src="assets/common.js?v=3"></script>
 <script>
 (function () {
   WR.header("news");

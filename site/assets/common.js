@@ -19,6 +19,21 @@
   IDX.companies.forEach((c) => (coName[c.id] = c.n));
   const catName = IDX.categories || {};
 
+  function icon(name) {
+    const paths = {
+      signal: '<path d="M3 8a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0M9 16a4 4 0 0 1 6 0"/><circle cx="12" cy="20" r="1"/>',
+      report: '<path d="M4 19V5h16v14H4ZM8 15v-3m4 3V9m4 6v-5"/>',
+      company: '<path d="M4 21V3h12v18m0-12h4v12M8 7h4M8 11h4M8 15h4M2 21h20"/>',
+      news: '<path d="M4 4h14v16H4V4Zm14 4h3v12h-3M7 8h8M7 12h8M7 16h5"/>',
+      apps: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
+      search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
+      arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
+      shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/>',
+      chip: '<rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/><rect x="10" y="10" width="4" height="4"/>'
+    };
+    return `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.signal}</svg>`;
+  }
+
   const techCls = (t) => ({ "Wi-Fi": "t-wifi", Bluetooth: "t-bt", "Other wireless": "t-oth", Business: "t-biz" }[t] || "");
   const tierBadge = (t) => `<span class="badge ${t === "Leader" ? "leader" : t === "Challenger" ? "challenger" : "niche"}">${esc(t)}</span>`;
   const momHtml = (m, n7) => {
@@ -39,7 +54,7 @@
     const cos = (n.c || []).slice(0, 5).map((c) => coName[c] ? `<a class="chip co" href="company.html?id=${c}">${esc(coName[c])}</a>` : "").join("");
     const tech = (n.tech || []).filter((t) => t !== "General").map((t) => `<span class="chip ${techCls(t)}">${esc(t)}</span>`).join("");
     const rg = (n.rg || []).filter((r) => r !== "Global").map((r) => `<span class="chip rg">${esc(r)}</span>`).join("");
-    const cov = n.cv > 1 ? `<span class="cov" onclick="document.getElementById('${id}').classList.toggle('open')">+${n.cv - 1} more outlet${n.cv > 2 ? "s" : ""} ▾</span>` : "";
+    const cov = n.cv > 1 && (n.al || []).length ? `<button type="button" class="cov" aria-expanded="false" aria-controls="${id}" onclick="const open=document.getElementById('${id}').classList.toggle('open');this.setAttribute('aria-expanded',open)">+${n.cv - 1} more outlet${n.cv > 2 ? "s" : ""} ▾</button>` : "";
     const also = (n.al || []).map((a) => `<a class="ext" href="${esc(a.u)}" target="_blank" rel="noopener">${esc(a.p)}</a>`).join("");
     return `<li>
       <a class="t ext" href="${esc(n.u)}" target="_blank" rel="noopener noreferrer">${esc(n.t)}</a>
@@ -52,29 +67,38 @@
   }
 
   function header(active) {
+    document.body.dataset.page = active;
     const cats = Object.entries(catName).map(([k, v]) => `<a href="index.html?cat=${k}#companies"><strong>${esc(v)}</strong><span>${IDX.companies.filter((c) => c.cat === k).length} companies tracked</span></a>`).join("");
     const gen = (window.WR_REPORT || window.WR_NEWS || window.WR_APPS || window.WR_RUNLOG || window.WR_COMPANY || {}).generated;
     const el = document.getElementById("hdr");
-    el.innerHTML = `<header class="topnav"><div class="wrap">
+    el.innerHTML = `<a class="skip-link" href="#main-content">Skip to content</a><header class="topnav"><div class="wrap">
       <div class="row1">
-        <a class="brand" href="index.html"><span class="logo">📡</span><span>Wireless Intelligence<small>Wi-Fi · Bluetooth · Short-range wireless market research</small></span></a>
+        <a class="brand" href="index.html"><span class="logo">${icon("signal")}</span><span>Wireless<span class="brand-accent"> Intelligence</span><small>THE CONNECTED WORLD, DECODED.</small></span></a>
         <span class="spacer"></span>
-        ${gen ? `<span class="status-pill" title="Agent last run">Agent run: <b>${esc(fmtPT(gen, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }))}</b></span>` : ""}
+        ${gen ? `<span class="status-pill" title="Last research run"><span class="status-dot"></span>Updated <b>${esc(fmtPT(gen, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }))}</b></span>` : ""}
         <form class="search" onsubmit="return WR.goSearch(event)" autocomplete="off">
-          <input id="q" type="text" placeholder="Search company or application (e.g. Nordic, smart glasses)…" oninput="WR.suggest()" onkeydown="WR.navSuggest(event)" onfocus="WR.suggest()" onblur="setTimeout(WR.hideSuggest,180)">
+          ${icon("search")}<input id="global-q" aria-label="Search companies and applications" type="text" placeholder="Search companies, applications…" oninput="WR.suggest()" onkeydown="WR.navSuggest(event)" onfocus="WR.suggest()" onblur="setTimeout(WR.hideSuggest,180)">
           <div id="suggest" class="suggest" hidden></div>
         </form>
       </div>
-      <nav class="navrow">
-        <a href="index.html" class="${active === "report" ? "active" : ""}">📊 Daily Report</a>
-        <div class="dd"><a href="index.html#companies" class="${active === "company" ? "active" : ""}">🏢 Companies ▾</a><div class="dd-menu">${cats}</div></div>
-        <a href="news.html" class="${active === "news" ? "active" : ""}">📰 News</a>
-        <a href="applications.html" class="${active === "apps" ? "active" : ""}">🧩 Applications</a>
-        <a href="sources.html" class="${active === "sources" ? "active" : ""}">🔎 Sources &amp; Method</a>
+      <nav class="navrow" aria-label="Main navigation">
+        <a href="index.html" ${active === "report" ? 'aria-current="page"' : ""} class="${active === "report" ? "active" : ""}">${icon("report")} Overview</a>
+        <details class="dd"><summary class="${active === "company" ? "active" : ""}">${icon("company")} Companies <span class="caret">⌄</span></summary><div class="dd-menu"><a href="index.html#companies"><strong>Explore all companies</strong><span>The full wireless ecosystem</span></a>${cats}</div></details>
+        <a href="news.html" ${active === "news" ? 'aria-current="page"' : ""} class="${active === "news" ? "active" : ""}">${icon("news")} Newsroom</a>
+        <a href="applications.html" ${active === "apps" ? 'aria-current="page"' : ""} class="${active === "apps" ? "active" : ""}">${icon("apps")} Applications</a>
+        <a href="sources.html" ${active === "sources" ? 'aria-current="page"' : ""} class="${active === "sources" ? "active" : ""}">${icon("shield")} Sources &amp; Method</a>
+        <span class="nav-caption">Wi-Fi / Bluetooth / Wireless AI</span>
       </nav></div></header>`;
+    const main = document.querySelector("main");
+    if (main) {
+      main.id = main.id || "main-content";
+      el.querySelector(".skip-link").href = "#" + main.id;
+    }
+    const menu = el.querySelector(".dd");
+    document.addEventListener("click", (event) => { if (!menu.contains(event.target)) menu.open = false; });
+    menu.addEventListener("keydown", (event) => { if (event.key === "Escape") { menu.open = false; menu.querySelector("summary").focus(); } });
     const f = document.getElementById("ftr");
-    if (f) f.innerHTML = `<div class="wrap">Built by an autonomous research agent from <b>publicly available</b> news feeds (Google News RSS, Bing News RSS) and public company websites. Every headline links to its original public source.
-      Market forecasts are extracted from public press releases and summarized; verify before using them in decisions. Company profiles describe publicly documented business lines. · <a href="sources.html">Sources &amp; methodology</a></div>`;
+    if (f) f.innerHTML = `<div class="wrap footer-grid"><div><a class="brand" href="index.html">${icon("signal")} Wireless Intelligence</a><p>Explore the companies, technologies and applications shaping the connected world.</p></div><div><span class="eyebrow">EVIDENCE, NOT GUESSWORK</span><p>Research from public news feeds and company websites. Every headline links to its source. Forecasts are indicative; verify before making decisions.</p><a href="sources.html">Explore our methodology ${icon("arrow")}</a></div></div>`;
   }
 
   // ---- search
@@ -89,13 +113,14 @@
   }
   function suggest() {
     const box = document.getElementById("suggest");
-    const r = matches(document.getElementById("q").value);
+    const r = matches(document.getElementById("global-q").value);
     sel = -1;
     if (!r.length) return (box.hidden = true);
     box.innerHTML = r.map((x) => `<a href="${x.h}">${esc(x.n)}<span>${esc(x.s)}</span></a>`).join("");
     box.hidden = false;
   }
   function navSuggest(e) {
+    if (e.key === "Escape") { hideSuggest(); return; }
     const items = [...document.querySelectorAll("#suggest a")];
     if (!items.length) return;
     if (e.key === "ArrowDown") sel = Math.min(sel + 1, items.length - 1);
@@ -107,8 +132,8 @@
   function goSearch(e) {
     e.preventDefault();
     const items = [...document.querySelectorAll("#suggest a")];
-    const q = document.getElementById("q").value.trim();
-    if (items.length) location.href = items[Math.max(sel, 0)].getAttribute("href");
+    const q = document.getElementById("global-q").value.trim();
+    if (!document.getElementById("suggest").hidden && items.length) location.href = items[Math.max(sel, 0)].getAttribute("href");
     else if (q) location.href = "news.html?q=" + encodeURIComponent(q);
     return false;
   }
@@ -138,9 +163,9 @@
     const dots = mid.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#0b6bcb" stroke="#fff" stroke-width="1.5"><title>${years[i]}: ${fmt(v)}</title></circle>`).join("");
     const lab = `<text x="${x(mid.length - 1)}" y="${y(mid[mid.length - 1]) - 10}" fill="#0f172a" font-size="12" font-weight="700" text-anchor="end">${fmt(mid[mid.length - 1])}</text>
                  <text x="${x(0) + 4}" y="${y(mid[0]) - 10}" fill="#0f172a" font-size="12" font-weight="700">${fmt(mid[0])}</text>`;
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(`Market trend: ${years[0]} ${fmt(mid[0])} to ${years[years.length - 1]} ${fmt(mid[mid.length - 1])}`)}">
       <defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(11,107,203,.22)"/><stop offset="1" stop-color="rgba(11,107,203,0)"/></linearGradient></defs>
-      ${g}${band}<path d="${area}" fill="url(#ag)"/><path d="${path}" fill="none" stroke="#0b6bcb" stroke-width="2.5"/>${dots}${lab}</svg>`;
+      ${g}${band}<path d="${area}" fill="url(#ag)"/><path class="trend-line" pathLength="1" d="${path}" fill="none" stroke="#0b6bcb" stroke-width="2.5"/>${dots}${lab}</svg>`;
   }
 
   function bars(rows, max) {
@@ -150,5 +175,5 @@
 
   const money = (v) => (v >= 1000 ? "$" + (v / 1000).toFixed(2) + "T" : v >= 1 ? "$" + v.toFixed(v >= 100 ? 0 : 1) + "B" : "$" + (v * 1000).toFixed(0) + "M");
 
-  window.WR = { esc, qs, fmtDate, fmtFull, fmtPT, ago, newsItem, header, suggest, navSuggest, goSearch, hideSuggest, lineChart, bars, themeChips, tierBadge, momHtml, coName, catName, techCls, money, TL: IDX.theme_labels || {} };
+  window.WR = { esc, qs, fmtDate, fmtFull, fmtPT, ago, newsItem, header, suggest, navSuggest, goSearch, hideSuggest, lineChart, bars, themeChips, tierBadge, momHtml, coName, catName, techCls, money, icon, TL: IDX.theme_labels || {} };
 })();

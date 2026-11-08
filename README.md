@@ -1,8 +1,10 @@
 # Wireless Intelligence: Wi-Fi & Bluetooth Market Research Agent
 
-An autonomous agent that researches the Wi-Fi, Bluetooth and short-range wireless industry every night. It publishes a static website with a daily report, company pages, a News tab and an Applications tab. Every item links to its public source.
+An agent that researches the Wi-Fi, Bluetooth and short-range wireless industry on demand locally or on a cloud schedule. It publishes a static website with a daily report, company pages, a News tab and an Applications tab. Every item links to its public source.
 
 ## What you get
+
+The website uses a light, blue/violet intelligence-hub design with an interactive wireless ecosystem illustration, source-linked story spotlights, and application discovery cards. Shared navigation and responsive layouts work across the report, company, news, and application pages. Decorative entrance, signal, and chart animations finish within four seconds and are disabled when the browser requests reduced motion. No external UI libraries, fonts, or image services are required.
 
 | Page | What it shows |
 |---|---|
@@ -37,10 +39,23 @@ Requirements: Python 3.10+ on PATH. `Run_Agent` installs `requests` if it is mis
 
 For a fresh report before 6 AM Pacific, run `Run_Agent.bat` before you leave the PC (on and awake). Each run builds on the stored 30-day history, so a run late in the evening still gives a complete report.
 
-Optional cloud alternative: push this folder to GitHub and use `.github/workflows/nightly.yml`. It runs at 12:00 UTC (4–5 AM Pacific) and publishes `site/` to GitHub Pages, without your PC.
+The cloud workflow `.github/workflows/nightly.yml` requests a daily run at 09:17 UTC (1:17 AM PST / 2:17 AM PDT), leaving a buffer before 6 AM Pacific. GitHub Actions schedules are best-effort and can be delayed; this is not a guaranteed delivery deadline. Cloud runs research and publish `site/` without your PC. No Windows scheduled task or wake timer is installed.
+
+### Local versus online reports
+
+- **Local:** http://localhost:8080/index.html#exec serves this checkout's `site/` folder. Starting the server does not run research or download cloud updates. Stop the server before closing its window; if it chooses a different port, use the URL it prints.
+- **Online:** https://kanakgupta.github.io/IOT_Market_research/ serves the last successful GitHub Pages deployment. A cloud research run commits refreshed data to GitHub, but does not change files on your PC.
+- **Refresh local data from cloud:** run `git pull --ff-only` from the repository root, then start `Script\Windows\Start_Server.bat` and reload the page. If Git reports conflicting local edits or divergent history, resolve them before retrying; do not discard local work.
+- **Generate locally instead:** run `Script\Windows\Run_Agent.bat`, then reload the local page. This updates local data only unless a publishing command is configured.
+- The displayed update time comes from the research snapshot, not the webpage build time. The `#exec` fragment only scrolls to the briefing; it does not trigger a refresh.
 
 ### Publishing online
-`site/` is fully static. To publish automatically after each run, set `WR_PUBLISH_CMD` to a copy or upload command for your web host; `Run_Agent` runs it after a successful run. Examples: `robocopy C:\...\site \\server\wwwroot /MIR`, `az storage blob upload-batch ...`, `aws s3 sync ...`.
+
+GitHub Pages must be enabled in repository **Settings > Pages > Source: GitHub Actions**. The workflow checks this configuration explicitly. Pushes to `main` that change `site/`, `agent/`, or the workflow publish the committed website immediately using the existing report. Scheduled runs and **Actions > nightly-wireless-research > Run workflow** perform full research, persist the data, and deploy. Check both the research and deployment jobs: a successful research commit alone does not mean the public site was deployed.
+
+`site/` is the complete build/deploy directory; no npm build or bundler is required. All asset and data links are relative so the repository subpath works. If publishing fails, inspect the failed workflow job rather than relying on the Git commit date.
+
+For a different web host, set `WR_PUBLISH_CMD` to a copy or upload command; `Run_Agent` runs it after a successful local run. Examples: `robocopy C:\...\site \\server\wwwroot /MIR`, `az storage blob upload-batch ...`, `aws s3 sync ...`.
 
 ### Optional AI narrative
 Set `LLM_API_KEY` (plus optional `LLM_BASE_URL` and `LLM_MODEL`, for any OpenAI-compatible endpoint). The executive summary then gets an analyst narrative. It is written **only** from the numbered public headlines and cites them as clickable `[n]` links. Without a key, the summary is fully deterministic.
