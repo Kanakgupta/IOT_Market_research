@@ -21,9 +21,17 @@ if (-not (Test-Path (Join-Path $site "data\report.js"))) {
     Write-Host "No report data yet - run Script\Windows\Run_Agent.bat first." -ForegroundColor Yellow
 }
 
-$py = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $py) { $py = (Get-Command py -ErrorAction SilentlyContinue).Source }
-if (-not $py) { Write-Host "Python was not found on PATH. Install Python 3.10+ and try again." -ForegroundColor Red; exit 2 }
+$pythonCandidates = @()
+foreach ($commandName in @("py", "python")) {
+  $command = Get-Command $commandName -ErrorAction SilentlyContinue
+  if ($command) { $pythonCandidates += $command.Source }
+}
+$py = $null
+foreach ($candidate in $pythonCandidates) {
+  & $candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
+  if ($LASTEXITCODE -eq 0) { $py = $candidate; break }
+}
+if (-not $py) { Write-Host "Python 3.10+ was not found. Install Python and try again." -ForegroundColor Red; exit 2 }
 
 function Test-PortBusy([int]$p) {
     $null -ne (Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue)

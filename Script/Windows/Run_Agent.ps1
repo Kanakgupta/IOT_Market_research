@@ -27,14 +27,23 @@ $logDir = Join-Path $agent "logs"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $log = Join-Path $logDir ("run_" + (Get-Date -Format "yyyy-MM-dd_HHmmss") + ".log")
 
-$py = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $py) { $py = (Get-Command py -ErrorAction SilentlyContinue).Source }
-if (-not $py) { Write-Host "Python was not found on PATH. Install Python 3.10+ and try again." -ForegroundColor Red; exit 2 }
+$pythonCandidates = @()
+foreach ($commandName in @("py", "python")) {
+  $command = Get-Command $commandName -ErrorAction SilentlyContinue
+  if ($command) { $pythonCandidates += $command.Source }
+}
+$py = $null
+foreach ($candidate in $pythonCandidates) {
+  & $candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
+  if ($LASTEXITCODE -eq 0) { $py = $candidate; break }
+}
+if (-not $py) { Write-Host "Python 3.10+ was not found. Install Python and try again." -ForegroundColor Red; exit 2 }
 
 & $py -c "import requests" 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Installing the 'requests' package..." -ForegroundColor Yellow
-    & $py -m pip install --quiet requests
+  & $py -m pip install --user --quiet requests
+  if ($LASTEXITCODE -ne 0) { Write-Host "Could not install 'requests'. Check your internet connection and pip setup." -ForegroundColor Red; exit 3 }
 }
 
 $env:PYTHONIOENCODING = "utf-8"
