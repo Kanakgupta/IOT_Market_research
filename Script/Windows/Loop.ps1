@@ -118,6 +118,10 @@ while ($true) {
     }
 
     if ($Once) { exit 0 }
-    Write-Host "Next update in $IntervalMinutes minutes. Press Ctrl+C to stop."
+    $interval = [TimeSpan]::FromMinutes($IntervalMinutes)
+    $dayLabel = if ($interval.Days -eq 1) { "day" } else { "days" }
+    $hourLabel = if ($interval.Hours -eq 1) { "hour" } else { "hours" }
+    $minuteLabel = if ($interval.Minutes -eq 1) { "minute" } else { "minutes" }
+    Write-Host "Next update in $($interval.Days) $dayLabel, $($interval.Hours) $hourLabel, $($interval.Minutes) $minuteLabel. Press Ctrl+C to stop."
     Start-Sleep -Seconds ($IntervalMinutes * 60)
 }
