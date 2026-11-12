@@ -87,7 +87,6 @@
         <a href="news.html" ${active === "news" ? 'aria-current="page"' : ""} class="${active === "news" ? "active" : ""}">${icon("news")} Newsroom</a>
         <a href="applications.html" ${active === "apps" ? 'aria-current="page"' : ""} class="${active === "apps" ? "active" : ""}">${icon("apps")} Applications</a>
         <a href="sources.html" ${active === "sources" ? 'aria-current="page"' : ""} class="${active === "sources" ? "active" : ""}">${icon("shield")} Sources &amp; Method</a>
-        <span class="nav-caption">Wi-Fi / Bluetooth / Wireless AI</span>
       </nav></div></header>`;
     const main = document.querySelector("main");
     if (main) {
