@@ -27,6 +27,7 @@ Edit these files to add or remove coverage. No other code changes are needed.
 |---|---|
 | `Run_Agent.bat` | Double-click to run the research agent (full run, ~4 minutes). It refreshes `site\data\*` and writes a log to `agent\logs\`. Options: `-Quick` (30-second smoke test), `-Open` (opens the report when done). |
 | `Start_Server.bat` | Double-click to start the local web server and open http://localhost:8080 in your browser. If 8080 is busy, it uses the next free port. Options: `-Port 9000`, `-NoBrowser`. Stop with Ctrl+C or by closing the window. |
+| `Loop.bat` | Run research immediately, validate generated site data, commit all non-ignored project changes, rebase onto the current branch's upstream, and push. Repeats every 24 hours; stop with Ctrl+C. Requires Git for Windows with GitHub authentication configured. |
 
 Each `.bat` file calls the `.ps1` file of the same name, so you can also run them from PowerShell:
 
@@ -34,6 +35,8 @@ Each `.bat` file calls the `.ps1` file of the same name, so you can also run the
 C:\guptakanak\AI_Agents\Market_Research\Script\Windows\Run_Agent.ps1 -Open
 C:\guptakanak\AI_Agents\Market_Research\Script\Windows\Start_Server.ps1
 ```
+
+To change the update interval, run `Script\Windows\Loop.ps1 -IntervalMinutes 60`. Add `-Once` to run a single update cycle. The website is static and needs no separate build step; the loop validates every generated JavaScript data file before publishing. Each cycle stages all non-ignored changes, including source, design, and documentation files. It fetches and rebases before pushing, retries once if the remote advances during a push, and confirms the worktree is clean afterward. `.gitignore` excludes logs, virtual environments, environment files, private keys, and certificates.
 
 Requirements: Python 3.10+ on PATH. `Run_Agent` installs `requests` if it is missing. You can also open `site\index.html` directly, without the server.
 

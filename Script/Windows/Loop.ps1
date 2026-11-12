@@ -32,11 +32,32 @@ if ($LASTEXITCODE -ne 0 -or -not $upstream) {
     Write-Host "The current branch has no upstream. Configure a GitHub remote and upstream branch first." -ForegroundColor Red
     exit 2
 }
+$upstreamParts = $upstream -split "/", 2
+if ($upstreamParts.Count -ne 2) { Write-Host "Could not identify the upstream remote and branch." -ForegroundColor Red; exit 2 }
+$remote = $upstreamParts[0]
+$remoteBranch = $upstreamParts[1]
 
-function Assert-CleanIndex {
-    & $git -C $root diff --cached --quiet
-    if ($LASTEXITCODE -eq 1) { throw "Git has staged changes. Commit or unstage them before starting the loop." }
-    if ($LASTEXITCODE -ne 0) { throw "Could not inspect the Git staging area." }
+function Sync-And-Push {
+    & $git -C $root fetch $remote
+    if ($LASTEXITCODE -ne 0) { throw "Could not fetch $remote. Check network access and try again." }
+
+    & $git -C $root rebase -X theirs $upstream
+    if ($LASTEXITCODE -ne 0) { throw "Rebase failed. Resolve the Git conflicts, then rerun the loop." }
+
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        & $git -C $root push $remote "HEAD:refs/heads/$remoteBranch"
+        if ($LASTEXITCODE -eq 0) { break }
+        if ($attempt -eq 2) { throw "Git push failed. Check GitHub authentication and branch permissions." }
+
+        Write-Host "Remote changed during push; fetching and rebasing before retry..." -ForegroundColor Yellow
+        & $git -C $root fetch $remote
+        if ($LASTEXITCODE -ne 0) { throw "Could not fetch $remote after push was rejected." }
+        & $git -C $root rebase -X theirs $upstream
+        if ($LASTEXITCODE -ne 0) { throw "Rebase after push rejection failed. Resolve the Git conflicts, then rerun the loop." }
+    }
+
+    $remaining = & $git -C $root status --porcelain=v1 --untracked-files=all
+    if ($remaining) { throw "Push completed, but local changes remain:`n$remaining" }
 }
 
 function Test-GeneratedData {
@@ -70,36 +91,27 @@ function Test-GeneratedData {
 while ($true) {
     $started = Get-Date
     try {
-        Assert-CleanIndex
         Write-Host "`n[$($started.ToString('yyyy-MM-dd HH:mm:ss'))] Refreshing wireless research data..." -ForegroundColor Cyan
         & $powerShell.Source -NoProfile -ExecutionPolicy Bypass -File $agentScript
         if ($LASTEXITCODE -ne 0) { throw "Research agent failed with exit code $LASTEXITCODE." }
 
         Test-GeneratedData
-        Assert-CleanIndex
-        & $git -C $root add -- `
-            "agent/state/articles.json" `
-            "agent/state/forecasts.json" `
-            "site/data" `
-            "Script/Windows/Run_Agent.ps1" `
-            "Script/Windows/Start_Server.ps1" `
-            "Script/Windows/Loop.bat" `
-            "Script/Windows/Loop.ps1"
-        if ($LASTEXITCODE -ne 0) { throw "Could not stage generated project updates." }
+        & $git -C $root add --all
+        if ($LASTEXITCODE -ne 0) { throw "Could not stage project changes." }
 
         & $git -C $root diff --cached --quiet
         if ($LASTEXITCODE -eq 1) {
             $commitDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
-            & $git -C $root -c "user.name=research-agent" -c "user.email=research-agent@users.noreply.github.com" commit -m "Automated wireless research $commitDate"
+            & $git -C $root -c "user.name=research-agent" -c "user.email=research-agent@users.noreply.github.com" commit -m "Wireless research and project updates $commitDate"
             if ($LASTEXITCODE -ne 0) { throw "Git commit failed." }
-            & $git -C $root push
-            if ($LASTEXITCODE -ne 0) { throw "Git push failed. Check network access and GitHub authentication." }
-            Write-Host "Updates committed and pushed to $upstream." -ForegroundColor Green
         } elseif ($LASTEXITCODE -eq 0) {
-            Write-Host "Validated successfully; there are no changes to publish." -ForegroundColor Green
+            Write-Host "No file changes to commit; syncing local commits to $upstream." -ForegroundColor Green
         } else {
             throw "Could not inspect staged updates."
         }
+
+        Sync-And-Push
+        Write-Host "All non-ignored project changes are pushed to $upstream; the worktree is clean." -ForegroundColor Green
     } catch {
         Write-Host "Update cycle failed: $($_.Exception.Message)" -ForegroundColor Red
         if ($Once) { exit 1 }

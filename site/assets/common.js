@@ -149,23 +149,23 @@
     let g = "";
     for (let k = 0; k <= 4; k++) {
       const v = min + ((max - min) * k) / 4;
-      g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e5e9f0"/><text x="${L - 8}" y="${y(v) + 4}" fill="#64748b" font-size="11" text-anchor="end">${fmt(v)}</text>`;
+      g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#deebe4"/><text x="${L - 8}" y="${y(v) + 4}" fill="#68817a" font-size="11" text-anchor="end">${fmt(v)}</text>`;
     }
     years.forEach((yr, i) => { g += `<text x="${x(i)}" y="${H - 12}" fill="#64748b" font-size="11" text-anchor="middle">${yr}</text>`; });
     let band = "";
     if (lo && hi) {
       const top = hi.map((v, i) => `${x(i)},${y(v)}`).join(" ");
       const bot = lo.map((v, i) => `${x(i)},${y(v)}`).reverse().join(" ");
-      band = `<polygon points="${top} ${bot}" fill="rgba(124,58,237,.10)" stroke="none"/>`;
+      band = `<polygon points="${top} ${bot}" fill="rgba(228,105,73,.12)" stroke="none"/>`;
     }
     const path = mid.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ");
     const area = path + ` L${x(mid.length - 1)},${y(0)} L${x(0)},${y(0)} Z`;
-    const dots = mid.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#0b6bcb" stroke="#fff" stroke-width="1.5"><title>${years[i]}: ${fmt(v)}</title></circle>`).join("");
-    const lab = `<text x="${x(mid.length - 1)}" y="${y(mid[mid.length - 1]) - 10}" fill="#0f172a" font-size="12" font-weight="700" text-anchor="end">${fmt(mid[mid.length - 1])}</text>
-                 <text x="${x(0) + 4}" y="${y(mid[0]) - 10}" fill="#0f172a" font-size="12" font-weight="700">${fmt(mid[0])}</text>`;
+    const dots = mid.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#07877b" stroke="#fff" stroke-width="1.5"><title>${years[i]}: ${fmt(v)}</title></circle>`).join("");
+    const lab = `<text x="${x(mid.length - 1)}" y="${y(mid[mid.length - 1]) - 10}" fill="#244d46" font-size="12" font-weight="700" text-anchor="end">${fmt(mid[mid.length - 1])}</text>
+           <text x="${x(0) + 4}" y="${y(mid[0]) - 10}" fill="#244d46" font-size="12" font-weight="700">${fmt(mid[0])}</text>`;
     return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(`Market trend: ${years[0]} ${fmt(mid[0])} to ${years[years.length - 1]} ${fmt(mid[mid.length - 1])}`)}">
-      <defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(11,107,203,.22)"/><stop offset="1" stop-color="rgba(11,107,203,0)"/></linearGradient></defs>
-      ${g}${band}<path d="${area}" fill="url(#ag)"/><path class="trend-line" pathLength="1" d="${path}" fill="none" stroke="#0b6bcb" stroke-width="2.5"/>${dots}${lab}</svg>`;
+      <defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(8,127,117,.24)"/><stop offset="1" stop-color="rgba(8,127,117,0)"/></linearGradient></defs>
+      ${g}${band}<path d="${area}" fill="url(#ag)"/><path class="trend-line" pathLength="1" d="${path}" fill="none" stroke="#07877b" stroke-width="2.5"/>${dots}${lab}</svg>`;
   }
 
   function bars(rows, max) {
